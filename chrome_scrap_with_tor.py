@@ -1,19 +1,30 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[50]:
+# In[1]:
+
+
+#!/usr/bin/env python
+# coding: utf-8
 
 import os 
 os.environ["LANG"] = "en_US.UTF-8"
 
+
+# In[2]:
+
+
+
 import pymongo
-client = pymongo.MongoClient("mongodb://mootje:mootje2000@82.217.36.166/properties") # defaults to port 27017
-db=client.properties
+# client = pymongo.MongoClient("mongodb://mootje:mootje2000@82.217.36.166/properties") # defaults to port 27017
+client = pymongo.MongoClient("mongodb://192.168.10.5:27017/temp")
+db=client.temp
 col=db.ids
 col_remaining=db.remaining_ids
 
 
-# In[62]:
+# In[26]:
+
 
 
 import json
@@ -28,11 +39,11 @@ options.add_argument('--disable-dev-shm-usage')
 options.add_argument('start-maximized')
 options.add_argument('disable-infobars')
 options.add_argument("--disable-extensions")
+options.add_argument('--proxy-server=socks5://127.0.0.1:9050')
 
 
-# In[78]:
+# In[27]:
 
-print("Please wait while we divide the ids...")
 
 
 remaining_ids=col_remaining.find()
@@ -41,19 +52,27 @@ url = ''
 temp = ''
 loop = 0
 crawled = 0
+deleteId = ''
+
 for i in remaining_ids:
 #     print('if runs')
-    loop += 1
-    if i['name']!= None:
-        col_remaining.delete_one({"_id":i['_id']})
-        
-        crawled = i['crawled']
-        temp = i["name"]
-        url=i['search_url']
-        start = i['start']
-        end = i["end"]
-        range1 = i["query"]
-        
+    try:
+        if i['name']!= None:
+            loop += 1
+            deleteId = i['_id']
+            
+            crawled = i['crawled']
+            temp = i["name"]
+            url=i['search_url']
+            start = i['start']
+            end = i["end"]
+            range1 = i["query"]
+
+            print("Running in pause mode... (i.e. Data is picked from the 'remaining_ids' collection.)\n")
+
+    except:
+        pass
+
     break
         
 if (loop == 0):
@@ -68,6 +87,14 @@ if (loop == 0):
     url=s["search_url"]
     range1=s["query"]
     temp = s["name"]
+
+    print("Running in fresh mode... (i.e. Data is picked from the 'ids' collection.)\n")
+
+# In[28]:
+
+
+
+print("Please wait while we divide the range into ids... This will take little longer for the large range.\n")
 
 arr = []
 idInput = ''
@@ -108,27 +135,25 @@ if (end > start):
 
 colSave=db[temp]
 
-# print(crawled)
+
+# In[29]:
+
+
+
 if (loop > 0):
     arr = arr[crawled:]
+# print(arr[-5:])
 
 
-# In[79]:
+# In[30]:
 
 
-# print(arr[-100::])
-# print(arr)
 
+print("Starting crawling...\n")
 
-# In[80]:
+driver = webdriver.Chrome('/home/ali/Scrapping/chromedriver', options = options)
 
-
-# save starting, ending, query, url and name in remaining
-
-print("Starting crawling...")
-
-driver = webdriver.Chrome('/home/ali/Desktop/Scrapping/chromedriver', options = options)
-
+err = False
 indexDone = 0
 for index, i in enumerate(arr):
 #     print(index)
@@ -136,7 +161,7 @@ for index, i in enumerate(arr):
     print("Crawling for ids: "+i)
     try: 
         
-#         if (index == 2):
+#         if (index == 1):
 #             print(1/0)
             
         driver.get(url)
@@ -163,19 +188,29 @@ for index, i in enumerate(arr):
             except:
                 pass
         if (index < len(arr)):
+            if (index == 0):
+                col_remaining.delete_one({"_id": deleteId})
+
+            idsSaved = int(i.split(',')[:1:-1][0])
+            idsRemain = end - idsSaved
+
             #save remaining
-            remainig_save={ "_id": 1000, "crawled": indexDone+crawled, "start": start, "end": end, "query": range1,"search_url":url,"name":temp}
+            remainig_save={ "_id": 1000, "idsSaved": idsSaved, "idsRemain": idsRemain, "crawled": indexDone+crawled, "start": start, "end": end, "query": range1,"search_url":url,"name":temp}
             print("Progress Saved...")
             col_remaining.insert_one(remainig_save)
         
 #         print(arr,copy)
     except:
-        
+        err = True
         try:
             col_remaining.delete_one({"_id":1000})
         except:
             pass
-        remainig_save={"start": start, "crawled": indexDone+crawled, "end": end, "query": range1, "name":temp, "search_url":url}
+        
+        idsSaved = int(i.split(',')[:1:1][0])-1
+        idsRemain = end - idsSaved
+
+        remainig_save={"idsSaved": idsSaved, "idsRemain": idsRemain, "start": start, "crawled": indexDone+crawled, "end": end, "query": range1, "name":temp, "search_url":url}
         col_remaining.insert_one(remainig_save)
         print("We encountered an error, but we saved the remaining record to be crawled, please rerun the program...")
         break
@@ -186,16 +221,12 @@ except:
     pass
 
 driver.close()
-print("Crawling done...")
+
+if (not err):
+    print("\nCrawling done...\n")
 
 
-# In[28]:
-
-
-
-
-
-# In[ ]:
+# In[15]:
 
 
 
