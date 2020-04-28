@@ -16,9 +16,9 @@ os.environ["LANG"] = "en_US.UTF-8"
 
 
 import pymongo
-# client = pymongo.MongoClient("mongodb://mootje:mootje2000@82.217.36.166/properties") # defaults to port 27017
-client = pymongo.MongoClient("mongodb://192.168.10.5:27017/temp")
-db=client.temp
+client = pymongo.MongoClient("mongodb://mootje:mootje2000@82.217.36.166/properties2") # defaults to port 27017
+
+db=client.properties2
 col=db.ids
 col_remaining=db.remaining_ids
 
@@ -68,7 +68,7 @@ for i in remaining_ids:
             end = i["end"]
             range1 = i["query"]
 
-            print("Running in pause mode... (i.e. Data is picked from the 'remaining_ids' collection.)\n")
+            print("\nRunning in pause mode... (i.e. Data is picked from the 'remaining_ids' collection.)\n")
 
     except:
         pass
@@ -88,7 +88,7 @@ if (loop == 0):
     range1=s["query"]
     temp = s["name"]
 
-    print("Running in fresh mode... (i.e. Data is picked from the 'ids' collection.)\n")
+    print("\nRunning in fresh mode... (i.e. Data is picked from the 'ids' collection.)\n")
 
 # In[28]:
 
@@ -151,7 +151,7 @@ if (loop > 0):
 
 print("Starting crawling...\n")
 
-driver = webdriver.Chrome('/home/ali/Scrapping/chromedriver', options = options)
+driver = webdriver.Chrome('/home/ali/Desktop/Scrapping/chromedriver', options = options)
 
 err = False
 indexDone = 0
@@ -160,7 +160,7 @@ for index, i in enumerate(arr):
 
     print("Crawling for ids: "+i)
     try: 
-        
+        result = {}
 #         if (index == 1):
 #             print(1/0)
             
@@ -174,8 +174,19 @@ for index, i in enumerate(arr):
         txt=driver.find_element_by_xpath("/html/body/pre").text
         data=json.loads(txt)
         
-#         print(type(data))
-        colSave.insert_one(data)
+        result["json"] = data
+
+        driver.get(url)
+        driver.find_element_by_xpath(input_field).send_keys(i)
+        select_box='//*[@id="f"]/option[5]'
+        driver.find_element_by_xpath(select_box).click()
+        driver.find_element_by_xpath(get_json).click()
+        txt=driver.find_element_by_xpath("/html/body/pre").text
+        data=json.loads(txt)
+        
+        result["geojson"] = data
+
+        colSave.insert_one(result)
         indexDone += 1
         
 #         print(i)

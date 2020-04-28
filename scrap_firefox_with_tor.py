@@ -14,11 +14,11 @@ os.environ["LANG"] = "en_US.UTF-8"
 # In[2]:
 
 
-
 import pymongo
-# client = pymongo.MongoClient("mongodb://mootje:mootje2000@82.217.36.166/properties") # defaults to port 27017
-client = pymongo.MongoClient("mongodb://192.168.10.5:27017/temp")
-db=client.temp
+client = pymongo.MongoClient("mongodb://mootje:mootje2000@82.217.36.166/properties2") # defaults to port 27017
+
+db=client.properties2
+
 col=db.ids
 col_remaining=db.remaining_ids
 
@@ -26,23 +26,48 @@ col_remaining=db.remaining_ids
 # In[26]:
 
 
-
 import json
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.options import Options
 
 options = Options()
 options.add_argument('--headless')
-options.add_argument('--disable-gpu')
-options.add_argument('--no-sandbox')
-options.add_argument('--disable-dev-shm-usage')
-options.add_argument('start-maximized')
-options.add_argument('disable-infobars')
-options.add_argument("--disable-extensions")
+
+profile = webdriver.FirefoxProfile()
+# Set proxy settings to manual
+profile.set_preference('network.proxy.type', 1)
+# Set proxy to Tor client on localhost
+profile.set_preference('network.proxy.socks', '127.0.0.1')
+profile.set_preference('network.proxy.socks_port', 9050)
+# Disable all images from loading, speeds page loading
+# http://kb.mozillazine.org/Permissions.default.image
+profile.set_preference('permissions.default.image', 2)
+# Set all new windows to open in the current window instead
+profile.set_preference('browser.link.open_newwindow', 1)
+
+# profile.set_preference('devtools.jsonview.enabled', False)
+
+# profile.update_preferences()
+
+driver = webdriver.Firefox(profile, options = options)
+# driver = webdriver.Firefox(profile)
+
+# In[1]:
+
+print('\nGetting your location, plese wait...')
+
+try:
+    driver.get('https://mylocation.org/')
+    txt = driver.find_element_by_xpath('/html/body/div[1]/div[4]/div[1]/div/div[1]/table/tbody/tr[4]/td[2]').text
+    txt1 = driver.find_elements_by_xpath('/html/body/div[1]/div[4]/div[1]/div/div[1]/table/tbody/tr[1]/td[2]/b')[0].text
+
+    print('\nYour location is somewhere in ' + txt + ' and your ip address is ' + txt1 + '\n')
+
+except:
+    print("\nSorry, couldn't get your location, maybe this part of the script needs tobe repaired...")
 
 
 # In[27]:
-
 
 
 remaining_ids=col_remaining.find()
@@ -52,6 +77,8 @@ temp = ''
 loop = 0
 crawled = 0
 deleteId = ''
+
+# print(remaining_ids)
 
 for i in remaining_ids:
 #     print('if runs')
@@ -90,7 +117,6 @@ if (loop == 0):
     print("Running in fresh mode... (i.e. Data is picked from the 'ids' collection.)\n")
 
 # In[28]:
-
 
 
 print("Please wait while we divide the range into ids... This will take little longer for the large range.\n")
@@ -147,10 +173,9 @@ if (loop > 0):
 # In[30]:
 
 
-
 print("Starting crawling...\n")
 
-driver = webdriver.Chrome('/home/ali/Scrapping/chromedriver', options = options)
+import time
 
 err = False
 indexDone = 0
@@ -159,9 +184,10 @@ for index, i in enumerate(arr):
 
     print("Crawling for ids: "+i)
     try: 
+        result = {}
         
-#         if (index == 1):
-#             print(1/0)
+    #         if (index == 1):
+    #             print(1/0)
             
         driver.get(url)
         input_field='//*[@id="objectIds"]'
@@ -173,8 +199,26 @@ for index, i in enumerate(arr):
         txt=driver.find_element_by_xpath("/html/body/pre").text
         data=json.loads(txt)
         
-#         print(type(data))
-        colSave.insert_one(data)
+    #         print(type(data))
+        
+        result["json"] = data
+
+        driver.get(url)
+        driver.find_element_by_xpath(input_field).  send_keys(i)
+        select_box='//*[@id="f"]/option[5]'
+        driver.find_element_by_xpath(select_box).click()
+        driver.find_element_by_xpath(get_json).click()
+
+        time.sleep(2)
+
+        driver.find_element_by_xpath('//*[@id="rawdata-tab"]').click()
+        txt=driver.find_element_by_xpath("/html/body/div/div/div/div[2]/div/div/div[2]/pre").text
+        data=json.loads(txt)
+        
+        result["geojson"] = data
+
+        colSave.insert_one(result)
+    
         indexDone += 1
         
 #         print(i)
