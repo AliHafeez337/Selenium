@@ -16,9 +16,9 @@ os.environ["LANG"] = "en_US.UTF-8"
 
 import pymongo
 client = pymongo.MongoClient("mongodb://mootje:mootje2000@82.217.36.166/properties2") # defaults to port 27017
-
+# client = pymongo.MongoClient("mongodb://localhost:27017/temp")
 db=client.properties2
-
+# db = client.temp
 col=db.ids
 col_remaining=db.remaining_ids
 
@@ -190,8 +190,10 @@ for index, i in enumerate(arr):
     #             print(1/0)
             
         driver.get(url)
+        driver.find_element_by_xpath('//*[@id="where"]').send_keys('1=1')
         input_field='//*[@id="objectIds"]'
         driver.find_element_by_xpath(input_field).send_keys(i)
+        driver.find_element_by_xpath('//*[@id="outFields"]').send_keys('*')
         select_box='//*[@id="f"]/option[2]'
         driver.find_element_by_xpath(select_box).click()
         get_json='/html/body/div/form/table/tbody/tr[36]/td/input[1]'
@@ -204,7 +206,9 @@ for index, i in enumerate(arr):
         result["json"] = data
 
         driver.get(url)
+        driver.find_element_by_xpath('//*[@id="where"]').send_keys('1=1')
         driver.find_element_by_xpath(input_field).  send_keys(i)
+        driver.find_element_by_xpath('//*[@id="outFields"]').send_keys('*')
         select_box='//*[@id="f"]/option[5]'
         driver.find_element_by_xpath(select_box).click()
         driver.find_element_by_xpath(get_json).click()
@@ -263,7 +267,7 @@ try:
 except:
     pass
 
-driver.close()
+# driver.close()
 
 if (not err):
     print("\nCrawling done...\n")
