@@ -148,8 +148,23 @@ if (loop > 0):
 # In[30]:
 
 
+import os
 
-print("Starting crawling...\n")
+dir = "/home/ali/Scrapping/"
+if not os.path.exists(dir):
+    os.mkdir(dir)
+
+dir = "/home/ali/Scrapping/Output/"
+if not os.path.exists(dir):
+    os.mkdir(dir)
+
+dir = "/home/ali/Scrapping/Output/" + temp
+if not os.path.exists(dir):
+    os.mkdir(dir)
+
+print("Saving output in: "+dir)
+
+print("\nStarting crawling...\n")
 
 driver = webdriver.Chrome('/home/ali/Desktop/Scrapping/chromedriver', options = options)
 
@@ -160,7 +175,6 @@ for index, i in enumerate(arr):
 
     print("Crawling for ids: "+i)
     try: 
-        result = {}
 #         if (index == 1):
 #             print(1/0)
             
@@ -176,7 +190,13 @@ for index, i in enumerate(arr):
         txt=driver.find_element_by_xpath("/html/body/pre").text
         data=json.loads(txt)
         
-        result["json"] = data
+        dir = "/home/ali/Scrapping/Output/" + temp + "/Json"
+        if not os.path.exists(dir):
+            os.mkdir(dir)
+
+        with open(dir+ "/"+i+".json", "w") as outfile: 
+            outfile.write(json.dumps(data)) 
+
 
         driver.get(url)
         driver.find_element_by_xpath('//*[@id="where"]').send_keys('1=1')
@@ -188,9 +208,14 @@ for index, i in enumerate(arr):
         txt=driver.find_element_by_xpath("/html/body/pre").text
         data=json.loads(txt)
         
-        result["geojson"] = data
+        dir = "/home/ali/Scrapping/Output/" + temp + "/GeoJson"
+        if not os.path.exists(dir):
+            os.mkdir(dir)
+            
+        with open(dir+ "/"+i+".geojson", "w") as outfile: 
+            outfile.write(json.dumps(data)) 
 
-        colSave.insert_one(result)
+
         indexDone += 1
         
 #         print(i)

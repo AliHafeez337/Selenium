@@ -172,10 +172,25 @@ if (loop > 0):
 
 # In[30]:
 
-
-print("Starting crawling...\n")
-
 import time
+
+import os
+
+dir = "/home/ali/Scrapping/"
+if not os.path.exists(dir):
+    os.mkdir(dir)
+
+dir = "/home/ali/Scrapping/Output/"
+if not os.path.exists(dir):
+    os.mkdir(dir)
+
+dir = "/home/ali/Scrapping/Output/" + temp
+if not os.path.exists(dir):
+    os.mkdir(dir)
+
+print("Saving output in: "+dir)
+
+print("\nStarting crawling...\n")
 
 err = False
 indexDone = 0
@@ -184,8 +199,6 @@ for index, i in enumerate(arr):
 
     print("Crawling for ids: "+i)
     try: 
-        result = {}
-        
     #         if (index == 1):
     #             print(1/0)
             
@@ -202,8 +215,14 @@ for index, i in enumerate(arr):
         data=json.loads(txt)
         
     #         print(type(data))
-        
-        result["json"] = data
+
+        dir = "/home/ali/Scrapping/Output/" + temp + "/Json"
+        if not os.path.exists(dir):
+            os.mkdir(dir)
+
+        with open(dir+ "/"+i+".json", "w") as outfile: 
+            outfile.write(json.dumps(data)) 
+
 
         driver.get(url)
         driver.find_element_by_xpath('//*[@id="where"]').send_keys('1=1')
@@ -213,16 +232,20 @@ for index, i in enumerate(arr):
         driver.find_element_by_xpath(select_box).click()
         driver.find_element_by_xpath(get_json).click()
 
-        time.sleep(2)
+        time.sleep(3)
 
         driver.find_element_by_xpath('//*[@id="rawdata-tab"]').click()
         txt=driver.find_element_by_xpath("/html/body/div/div/div/div[2]/div/div/div[2]/pre").text
         data=json.loads(txt)
-        
-        result["geojson"] = data
+            
+        dir = "/home/ali/Scrapping/Output/" + temp + "/GeoJson"
+        if not os.path.exists(dir):
+            os.mkdir(dir)
+            
+        with open(dir+ "/"+i+".geojson", "w") as outfile: 
+            outfile.write(json.dumps(data)) 
 
-        colSave.insert_one(result)
-    
+
         indexDone += 1
         
 #         print(i)
